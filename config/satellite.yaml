@@ -1,0 +1,12 @@
+# ============================
+# SATELLITE CONFIGURATION FILE
+# ============================
+
+mass: 6.0 # kg
+dimensions: [0.3, 0.2, 0.1] # meters (10 cm, 20 cm, 30 cm)
+inertia_tensor: # kg*m^2
+  [0.025, 0, 0]
+  [0, 0.05, 0]
+  [0, 0, 0.065]
+initial_attitude: [1.0, 0.0, 0.0, 0.0] # quaternion (w, x, y, z)
+initial_angular_velocity: [0.0, 0.0, 0.0] # rad/s

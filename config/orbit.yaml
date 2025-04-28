@@ -1,0 +1,12 @@
+# ========================
+# ORBIT CONFIGURATION FILE
+# ========================
+
+orbit_type: "LEO"
+orbit_shape: "Circular"
+semi_major_axis: 6878.0 # km
+eccentricity: 0.0
+inclination: 0.0 # deg
+raan: 0.0 # deg
+aop: 0.0 # deg
+ta: 0.0 # deg
