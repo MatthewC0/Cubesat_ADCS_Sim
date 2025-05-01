@@ -8,5 +8,5 @@ inertia_tensor: # kg*m^2
   - [0.025, 0, 0]
   - [0, 0.05, 0]
   - [0, 0, 0.065]
-initial_attitude: [1.0, 0.0, 0.0, 0.0] # quaternion (w, x, y, z)
-initial_angular_velocity: [1.0, 0.0, 0.0] # rad/s
+initial_attitude: [0.0, 0.0, 0.0, 1.0] # quaternion (x, y, z, w)
+initial_angular_velocity: [1.0, 0.0, 0.0] # deg/s (x, y, z)
