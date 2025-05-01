@@ -7,31 +7,16 @@ class EulerDynamics:
         self.I = inertia_matrix
         self.I_inv = np.linalg.inv(self.I)
 
-    def step(self, w, external_torque, dt):
+    def wdot(self, t, w, external_torque):
         w = np.array(w).reshape(3)
         external_torque = np.array(external_torque).reshape(3)
 
         w_cross_Iomega = np.cross(w, self.I @ w)
 
-        dwdt = self.I_inv @ (external_torque - w_cross_Iomega)
+        wdot = self.I_inv @ (external_torque - w_cross_Iomega)
+        return wdot
 
-        w = euler(dwdt, w, dt)
-
+    def step(self, w, external_torque, dt):
+        t = 0.0
+        w = euler(self.wdot, t, w, dt, external_torque)
         return w
-
-# def euler_dynamics(inertia_matrix, w, dt):
-#     I = inertia_matrix
-#     I_inv = np.linalg.inv(I)
-#
-#     omega = np.array(w).reshape(3)
-#     external_torque = np.zeros(3).reshape(3)
-#
-#     omega_cross_Iomega = np.cross(omega, I@omega)
-#
-#     angular_acceleration = I_inv @ (external_torque - omega_cross_Iomega)
-#
-#     omega_next = omega + angular_acceleration * dt
-#
-#     return omega_next
-
-

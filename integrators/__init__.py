@@ -1,1 +1,1 @@
-from .euler import euler as euler
+from .euler import euler

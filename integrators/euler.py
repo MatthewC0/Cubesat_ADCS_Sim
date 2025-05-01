@@ -1,3 +1,4 @@
-def euler(f, y, dt):
-    dydt = f
-    return y + dydt*dt
+def euler(f, t, y, dt, *args):
+    ydot = f(t, y, *args)
+    y = y + ydot*dt
+    return y

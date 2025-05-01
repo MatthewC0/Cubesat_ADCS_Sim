@@ -1,7 +1,6 @@
 import numpy as np
 import yaml
-from dynamics.euler_dynamics import EulerDynamics
-from dynamics.attitude_kinematics import quaternion
+from dynamics import EulerDynamics, quaternion
 
 def main():
     with open('../config/satellite.yaml', 'r') as file:
