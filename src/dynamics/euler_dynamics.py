@@ -1,4 +1,5 @@
 import numpy as np
+from integrators import euler
 
 
 class EulerDynamics:
@@ -6,19 +7,15 @@ class EulerDynamics:
         self.I = inertia_matrix
         self.I_inv = np.linalg.inv(self.I)
 
-    def compute_angular_acceleration(self, w, external_torque):
+    def step(self, w, external_torque, dt):
         w = np.array(w).reshape(3)
         external_torque = np.array(external_torque).reshape(3)
 
         w_cross_Iomega = np.cross(w, self.I @ w)
 
-        angular_acceleration = self.I_inv @ (external_torque - w_cross_Iomega)
+        dwdt = self.I_inv @ (external_torque - w_cross_Iomega)
 
-        return angular_acceleration
-
-    def step(self, w, external_torque, dt):
-        dwdt = self.compute_angular_acceleration(w, external_torque)
-        w = w + dwdt*dt
+        w = euler(dwdt, w, dt)
 
         return w
 
