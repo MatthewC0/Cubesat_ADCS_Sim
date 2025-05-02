@@ -16,7 +16,7 @@ def main():
 
     I = sat_config['inertia_tensor']
     w[0] = sat_config['initial_angular_velocity']
-    q[0] = sat_config['initial_attitude']
+    q[0] = sat_config['initial_quaternion']
     external_torque = np.zeros(3)
 
     euler_dyn = EulerDynamics(I)

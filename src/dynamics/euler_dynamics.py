@@ -1,5 +1,5 @@
 import numpy as np
-from integrators import euler
+from integrators import rk4
 
 
 class EulerDynamics:
@@ -18,5 +18,5 @@ class EulerDynamics:
 
     def step(self, w, external_torque, dt):
         t = 0.0
-        w = euler(self.wdot, t, w, dt, external_torque)
+        w = rk4(self.wdot, t, w, dt, external_torque)
         return w

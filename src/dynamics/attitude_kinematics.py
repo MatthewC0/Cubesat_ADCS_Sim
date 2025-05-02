@@ -1,5 +1,5 @@
 import numpy as np
-from integrators import euler
+from integrators import rk4
 
 
 def qdot(t, q, w):
@@ -14,6 +14,6 @@ def qdot(t, q, w):
 
 def quaternion(q, w, dt):
     t = 0.0
-    q = euler(qdot, t, q, dt, w)
+    q = rk4(qdot, t, q, dt, w)
     q /= np.linalg.norm(q)
     return q
