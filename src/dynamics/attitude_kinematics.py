@@ -19,7 +19,7 @@ def quaternion(q, w, dt):
     return q
 
 
-def omegadot(t, theta, w):
+def thetadot(t, theta, w):
     c = np.cos
     s = np.sin
     matrix = np.array([[c(theta[1]), s(theta[0])*s(theta[1]), c(theta[0])*s(theta[1])],
@@ -32,5 +32,5 @@ def omegadot(t, theta, w):
 
 def euler_angles(theta, w, dt):
     t = 0.0
-    theta = rk4(omegadot, t, theta, dt, w)
+    theta = rk4(thetadot, t, theta, dt, w)
     return theta

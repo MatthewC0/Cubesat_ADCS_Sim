@@ -6,7 +6,8 @@ def plot(data, time, datatype='none',show_plot=False):
     fig = plt.figure()
 
     ax1 = fig.add_subplot(1, 1, 1)
-    ax1.plot(time, data)
+    for i in range(data.shape[1]):
+        ax1.plot(time, data[:, i])
 
     # Plot configuration
     plt.grid()
