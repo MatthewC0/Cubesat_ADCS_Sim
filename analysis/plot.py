@@ -14,12 +14,12 @@ def plot(data, time, datatype='none',show_plot=False):
     if datatype == 'angle':
         plt.xlabel('Time [s]')
         plt.ylabel('Angle [deg]')
-        plt.legend(['X', 'Y', 'Z'])
+        plt.legend(['X', 'Y', 'Z', 'Xest', 'Yest', 'Zest'])
 
     if datatype == 'angular_velocity':
         plt.xlabel('Time [s]')
         plt.ylabel('Angular Velocity [deg/s]')
-        plt.legend(['X', 'Y', 'Z'])
+        plt.legend(['X', 'Y', 'Z', 'Xest', 'Yest', 'Zest'])
 
     if datatype == 'quaternion':
         plt.xlabel('Time [s]')
