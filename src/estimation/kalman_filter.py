@@ -1,5 +1,4 @@
 import numpy as np
-from src.dynamics import EulerDynamics
 
 
 def recursion_average(datapoint, k, previous_avg):
@@ -22,17 +21,27 @@ def low_pass_filter(datapoint, previous_avg, alpha):
 
 
 class kalman_filter():
-    def __init__(self, n, Q, R, P0):
+    """Kalman filter class for state estimation.
+
+    Args:
+        n (int): Number of states to estimate.
+        Q (float|[nxn]): Process noise covariance or uncertainty in the prediction model.
+        R (float|[mxm]): Measurement noise covariance or how noisy the sensor is.
+        P (float|[nxn]): Estimate covariance or how uncertain we are about the state.
+        dynamics (class): The class that represents the dynamics of the spacecraft.
+    """
+    def __init__(self, n, Q, R, P, dynamics):
         self.n = n
         self.A = np.eye(n)
         self.H = np.eye(n)  # identity matrix since measuring angular velocity directly
-        self.Q = Q
-        self.R = R
-        self.P = P0
+        self.Q = Q  # larger Q trusts measurement more while smaller Q trusts model more
+        self.R = R  # larger R trusts model more while smaller R trust measurement more
+        self.P = P
         self.x = np.zeros(n)
+        self.dynamics = dynamics
 
-    def predict(self):
-        self.x = self.A @ self.x
+    def predict(self, torque, dt):
+        self.x = self.dynamics.step(self.x, torque, dt)
         self.P = self.A @ self.P @ self.A.T + self.Q
 
     def update(self, w_measured):
@@ -42,7 +51,14 @@ class kalman_filter():
         self.x = self.x + K @ y
         self.P = (np.eye(self.n) - K @ self.H) @ self.P
 
-    def step(self, w_measured):
-        self.predict()
+    def step(self, w_measured, torque, dt):
+        """Predicts the next step and updates the estimated state.
+
+        Args:
+            w_measured (float|[1xn]): Measured angular velocity.
+            torque (float|[1xn]): External torque values.
+            dt (float): Timestep parameter.
+        """
+        self.predict(torque, dt)
         self.update(w_measured)
         return self.x

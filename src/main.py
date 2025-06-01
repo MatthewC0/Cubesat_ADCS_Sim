@@ -25,6 +25,7 @@ def main():
     w_filtered = np.zeros((steps+1, 3))
     q_true = np.zeros((steps+1, 4))
     q_measured = np.zeros((steps+1, 4))
+    q_filtered = np.zeros((steps+1, 4))
     theta_true = np.zeros((steps+1, 3))
     theta_measured = np.zeros((steps+1, 3))
 
@@ -53,13 +54,13 @@ def main():
     # Simulating kalman filter estimation
     w_filtered[0] = w_measured[0]
     n = 3
-    Q = np.eye(n)*1e-5  # larger Q trusts measurement more while smaller Q trusts model more
-    Ra = np.eye(n)*1e-2
+    Q = np.eye(n)*1e-4  # larger Q trusts measurement more while smaller Q trusts model more
+    Ra = np.eye(n)*1e-1  # larger R trusts model more while smaller R trust measurement more
     # Testing adding measurement noise from gyroscope, still working on it.
     # Ra_measurement = np.radians(measurement_noise[0])/3600
     # Ra = np.diag([Ra_measurement**2] * 3)
     P = np.eye(n)*1e-0
-    kf = kalman_filter(n, Q, Ra, P)
+    kf = kalman_filter(n, Q, Ra, P, euler_dyn)
     # ============================================================================================
 
     # Simple moving average
@@ -78,9 +79,10 @@ def main():
         # w_filtered[i+1] = recursion_average(w_measured[i+1], i+1, w_filtered[i])
         # w_filtered[i+1] = simple_moving_average(w_measured, i+1, n)
         # w_filtered[i+1] = low_pass_filter(w_measured[i+1], w_filtered[i], alpha)
-        w_filtered[i+1] = kf.step(w_measured[i+1])
+        w_filtered[i+1] = kf.step(w_measured[i+1], external_torque, dt)
         q_true[i+1] = quaternion(q_true[i], w_true[i], dt)
         q_measured[i+1] = quaternion(q_measured[i], w_measured[i], dt)
+        q_filtered[i+1] = quaternion(q_filtered[i], w_filtered[i], dt)
         theta_true[i+1] = R.from_quat(q_true[i+1]).as_euler('xyz', degrees=False)
         theta_measured[i+1] = gyro.read(theta_true[i])
 
@@ -113,7 +115,7 @@ def main():
     # plot(q_true, t, datatype='quaternion', show_plot=True)
     # plot(q_measured, t, datatype='quaternion', show_plot=True)
     # plot(theta, t, datatype='angle', show_plot=True)
-    # plot_3d(q, t, filename)
+    # plot_3d(q_true, t, filename)
 
     plt.plot(t, w_true[:, 0], label='True wx')
     plt.plot(t, w_measured[:, 0], label='Measured wx')
