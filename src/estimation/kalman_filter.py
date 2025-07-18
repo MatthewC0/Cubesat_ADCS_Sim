@@ -21,7 +21,7 @@ def low_pass_filter(datapoint, previous_avg, alpha):
 
 
 class kalman_filter():
-    """Kalman filter class for state estimation.
+    """Extended Kalman Filter (EKF) class for state estimation.
 
     Args:
         n (int): Number of states to estimate.
@@ -40,9 +40,13 @@ class kalman_filter():
         self.x = np.zeros(n)
         self.dynamics = dynamics
 
-    def predict(self, torque, dt):
+    def predict(self, torque, dt, jacobian=False):
         self.x = self.dynamics.step(self.x, torque, dt)
-        self.P = self.A @ self.P @ self.A.T + self.Q
+        if jacobian:
+            F = self.dynamics.jacobian(self.x, torque)
+            self.P = F @ self.P @ F.T + self.Q
+        else:
+            self.P = self.A @ self.P @ self.A.T + self.Q
 
     def update(self, w_measured):
         S = self.H @ self.P @ self.H.T + self.R
@@ -51,7 +55,7 @@ class kalman_filter():
         self.x = self.x + K @ y
         self.P = (np.eye(self.n) - K @ self.H) @ self.P
 
-    def step(self, w_measured, torque, dt):
+    def step(self, w_measured, torque, dt, jacobian=False):
         """Predicts the next step and updates the estimated state.
 
         Args:
@@ -59,6 +63,6 @@ class kalman_filter():
             torque (float|[1xn]): External torque values.
             dt (float): Timestep parameter.
         """
-        self.predict(torque, dt)
+        self.predict(torque, dt, jacobian=jacobian)
         self.update(w_measured)
         return self.x
