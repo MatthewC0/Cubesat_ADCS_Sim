@@ -52,6 +52,7 @@ class kalman_filter():
         S = self.H @ self.P @ self.H.T + self.R
         K = self.P @ self.H.T @ np.linalg.inv(S)
         y = w_measured - self.H @ self.x
+        self.innovation = y
         self.x = self.x + K @ y
         self.P = (np.eye(self.n) - K @ self.H) @ self.P
 
@@ -66,3 +67,6 @@ class kalman_filter():
         self.predict(torque, dt, jacobian=jacobian)
         self.update(w_measured)
         return self.x
+
+    def get_innovation(self):
+        return self.innovation

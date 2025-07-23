@@ -7,6 +7,7 @@ from analysis import plot, plot_3d
 from sensors.gyro import Gyro
 from estimation.kalman_filter import recursion_average, simple_moving_average, low_pass_filter, kalman_filter
 from control.pid_controller import PIDController, quaternion_error
+from actuators.reaction_wheel import reactionwheel
 
 
 def main():
@@ -16,7 +17,7 @@ def main():
 
     # Setting up simulation time
     dt = 0.01  # simulation timestep [sec]
-    tfinal = 100  # total simulation time [sec]
+    tfinal = 200  # total simulation time [sec]
     steps = int(tfinal/dt)  # number of simulation steps
     t = np.linspace(0, tfinal, steps+1)  # setting up time matrix
 
@@ -30,7 +31,11 @@ def main():
     theta_true = np.zeros((steps+1, 3))
     theta_measured = np.zeros((steps+1, 3))
     theta_filtered = np.zeros((steps+1, 3))
+    cmd = np.zeros((steps+1, 3))
+    wheel_speeds = np.zeros((steps+1, 3))
+    wheel_saturation = np.zeros(steps+1, dtype=bool)
     external_torque = np.zeros((steps+1, 3))
+    innovation = np.zeros((steps+1, 3))
 
     # Configuring satellite initial conditions and parameters
     I = np.array(sat_config['inertia_tensor'])
@@ -59,13 +64,13 @@ def main():
     w_filtered[0] = w_measured[0]
     q_filtered[0] = q_measured[0]
     n = 3
-    Q = np.eye(n)*1e-1  # larger Q trusts measurement more while smaller Q trusts model more
-    Ra = np.eye(n)*1e-1  # larger R trusts model more while smaller R trust measurement more
+    Q = np.eye(n)*0.2e-1  # (.02) larger Q trusts measurement more while smaller Q trusts model more
+    Ra = np.eye(n)*5e-0  # (5) larger R trusts model more while smaller R trust measurement more
     # Testing adding measurement noise from gyroscope, still working on it.
     # Ra_measurement = np.radians(measurement_noise[0])/3600
     # Ra = np.diag([Ra_measurement**2] * 3)
     P = np.eye(n)*1e-0
-    kf = kalman_filter(n, Q, Ra, P, euler_dyn)
+    ekf = kalman_filter(n, Q, Ra, P, euler_dyn)
     # ============================================================================================
     # Simple moving average
     # n = 10
@@ -95,6 +100,11 @@ def main():
     R = np.array([])
     # ============================================================================================
 
+    # ============================================================================================
+    # Reaction wheel configuration
+    rw = reactionwheel()
+    # ============================================================================================
+
     for i in range(steps):
         # print('Q TRUE', q_true[i])
         # print('Q FILTERED', q_filtered[i])
@@ -102,15 +112,18 @@ def main():
         q_error[i] = quaternion_error(q_desired, q_filtered[i])
         w_error[i] = w_filtered[i]
         # print('ANGULAR VELOCITY ERROR', w_error[i])
-        external_torque[i] = pid.compute(q_error[i], w_error[i], dt)
-        external_torque[i] = np.clip(external_torque[i], -max_torque, max_torque)
+        cmd[i] = pid.compute(q_error[i], w_error[i], dt)
+        external_torque[i] = rw.apply_control_torque(cmd[i], dt)
+        wheel_speeds[i] = rw.get_wheel_speed()
+        wheel_saturation[i] = rw.is_saturated()
 
         w_true[i+1] = euler_dyn.step(w_true[i], external_torque[i], dt)
         w_measured[i+1] = gyro.read(w_true[i+1])
         # w_filtered[i+1] = recursion_average(w_measured[i+1], i+1, w_filtered[i])
         # w_filtered[i+1] = simple_moving_average(w_measured, i+1, n)
         # w_filtered[i+1] = low_pass_filter(w_measured[i+1], w_filtered[i], alpha)
-        w_filtered[i+1] = kf.step(w_measured[i+1], external_torque[i+1], dt, jacobian=True)
+        w_filtered[i+1] = ekf.step(w_measured[i+1], external_torque[i], dt, jacobian=True)
+        innovation[i+1] = ekf.get_innovation()
 
         q_true[i+1] = quaternion(q_true[i], w_true[i], dt)
         q_measured[i+1] = quaternion(q_measured[i], w_measured[i], dt)
@@ -156,24 +169,35 @@ def main():
     # plot(q_true, t, datatype='quaternion', show_plot=True)
     # plot(q_measured, t, datatype='quaternion', show_plot=True)
     # plot(theta, t, datatype='angle', show_plot=True)
-    plot_3d(q_true, t, filename)
+    # plot_3d(q_true, t, filename)
+
+    plt.plot(t, wheel_saturation, drawstyle='steps-post')
+    plt.grid()
+    plt.show()
+
+    plt.plot(t, wheel_speeds)
+    plt.grid()
+    plt.show()
 
     w_filter_error = w_true - w_filtered
     plt.plot(t, w_filter_error[:, 0])
+    plt.grid()
+    plt.show()
+
+    plt.plot(t, w_true[:, 0], linestyle='-', label='True wx', color='red')
+    plt.plot(t, w_true[:, 1], linestyle='-', label='True wy', color='blue')
+    plt.plot(t, w_true[:, 2], linestyle='-', label='True wz', color='green')
+    plt.plot(t, w_measured[:, 0], linestyle='--', label='Measured wx', color='red')
+    plt.plot(t, w_measured[:, 1], linestyle='--', label='Measured wy', color='blue')
+    plt.plot(t, w_measured[:, 2], linestyle='--', label='Measured wz', color='green')
+    plt.plot(t, w_filtered[:, 0], linestyle=':', label='Estimated wx', color='red')
+    plt.plot(t, w_filtered[:, 1], linestyle=':', label='Estimated wy', color='blue')
+    plt.plot(t, w_filtered[:, 2], linestyle=':', label='Estimated wz', color='green')
     plt.legend()
     plt.grid()
     plt.show()
 
-    plt.plot(t, w_true[:, 0], label='True wx')
-    plt.plot(t, w_measured[:, 0], label='Measured wx')
-    plt.plot(t, w_filtered[:, 0], label='Filtered wx')
-    plt.legend()
-    plt.grid()
-    plt.show()
-
-    plt.plot(t, w_measured[:, 0], label='True wx')
-    plt.plot(t, w_measured[:, 1], label='True wy')
-    plt.plot(t, w_measured[:, 2], label='True wz')
+    plt.plot(t, innovation, label='Innovation')
     plt.legend()
     plt.grid()
     plt.show()
