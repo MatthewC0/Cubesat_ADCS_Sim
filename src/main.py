@@ -8,12 +8,15 @@ from sensors.gyro import Gyro
 from estimation.kalman_filter import recursion_average, simple_moving_average, low_pass_filter, kalman_filter
 from control.pid_controller import PIDController, quaternion_error
 from actuators.reaction_wheel import reactionwheel
+from perturbations.manager import PerturbationManager
 
 
 def main():
     filename = 'movie.mp4'
-    with open('../config/satellite.yaml', 'r') as file:
-        sat_config = yaml.safe_load(file)
+    with open('../config/satellite.yaml', 'r') as sat:
+        sat_config = yaml.safe_load(sat)
+    with open('../config/orbit.yaml', 'r') as orbit:
+        orbit_config = yaml.safe_load(orbit)
 
     # Setting up simulation time
     dt = 0.01  # simulation timestep [sec]
@@ -47,6 +50,11 @@ def main():
     rot = Rot.from_euler('xyz', theta_true[0])
     q_true[0] = rot.as_quat()
     q_measured[0] = q_true[0]
+
+    config = {
+        'gravity_gradient': True
+    }
+    perturbation_manager = PerturbationManager(config, I)
 
     # ============================================================================================
     # Simulating gyroscope given Angular Random Walk (ARW), Bias-run, and random measurement noise
@@ -114,6 +122,9 @@ def main():
         # print('ANGULAR VELOCITY ERROR', w_error[i])
         cmd[i] = pid.compute(q_error[i], w_error[i], dt)
         external_torque[i] = rw.apply_control_torque(cmd[i], dt)
+        perturbations = perturbation_manager.compute_total_torque(q=q_true[i], t=t[i], r_mag=orbit_config['semi_major_axis'])
+        # print('PERTURBATION TORQUE: ', perturbations, '\n')
+        external_torque[i] += perturbations
         wheel_speeds[i] = rw.get_wheel_speed()
         wheel_saturation[i] = rw.is_saturated()
 
