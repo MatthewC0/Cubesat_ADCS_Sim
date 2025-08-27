@@ -32,7 +32,7 @@ class kalman_filter():
     """
     def __init__(self, n, Q, R, P, dynamics):
         self.n = n
-        self.A = np.eye(n)
+        self.A = np.eye(n)  # models how the state evolves without noise
         self.H = np.eye(n)  # identity matrix since measuring angular velocity directly
         self.Q = Q  # larger Q trusts measurement more while smaller Q trusts model more
         self.R = R  # larger R trusts model more while smaller R trust measurement more

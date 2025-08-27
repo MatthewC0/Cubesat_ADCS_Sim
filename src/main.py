@@ -9,6 +9,9 @@ from estimation.kalman_filter import recursion_average, simple_moving_average, l
 from control.pid_controller import PIDController, quaternion_error
 from actuators.reaction_wheel import reactionwheel
 from perturbations.manager import PerturbationManager
+from datetime import datetime, timezone, timedelta
+from utils.orbital_tools import get_r_vec_inertial
+from sensors.magnetometer.mag import Magnetometer
 
 
 def main():
@@ -23,6 +26,7 @@ def main():
     tfinal = 200  # total simulation time [sec]
     steps = int(tfinal/dt)  # number of simulation steps
     t = np.linspace(0, tfinal, steps+1)  # setting up time matrix
+    t0 = datetime(2025, 8, 3, 0, 0, 0, tzinfo=timezone.utc)
 
     # Initializing data arrays
     w_true = np.zeros((steps+1, 3))
@@ -63,6 +67,14 @@ def main():
     measurement_noise = [720.0, 720.0, 720.0]  # general measurement noise [deg/hr]
     gyro = Gyro(arw=arw, bias_run=bias_run, measurement_noise=measurement_noise, dt=dt)
     w_measured[0] = gyro.read(w_true[0])
+    # ============================================================================================
+    # Simulating magnetometer
+    mag_bias = [10, 10, 10]  # nT
+    mag_noise = [10, 10, 10]  # nT
+    mag_drift = [0, 0, 0]  # nT
+
+    mag = Magnetometer(bias_std=mag_bias, noise_std=mag_noise, drift_std=mag_drift)
+
     # ============================================================================================
 
     euler_dyn = EulerDynamics(I)
@@ -114,6 +126,17 @@ def main():
     # ============================================================================================
 
     for i in range(steps):
+        utc = t0 + timedelta(seconds=t[i])
+        r_eci = get_r_vec_inertial(t[i], r_mag=orbit_config['semi_major_axis'])
+        B_body_true, B_ecef_true, B_neu, B_body_measured, noise, bias, lat, lon = mag.read(utc, r_eci, q_true[i])
+        print(f'Time: {utc}, {r_eci}')
+        print(f'Latitude & Longitude: {lat}, {lon}')
+        print(f'NEU Magnetic Values: {B_neu[0]}, {B_neu[1]}, {B_neu[2]}')
+        print(f'True ECEF Magnetic Values: {B_ecef_true[0]}, {B_ecef_true[1]}, {B_ecef_true[2]}')
+        print(f'True Body Magnetic Values: {B_body_true[0]}, {B_body_true[1]}, {B_body_true[2]}')
+        print(f'Measured Body Magnetic Values: {B_body_measured[0]}, {B_body_measured[1]}, {B_body_measured[2]}')
+        print(f'Noise and Bias: {noise}, {bias} \n')
+
         # print('Q TRUE', q_true[i])
         # print('Q FILTERED', q_filtered[i])
         # print('Q DESIRED', q_desired)

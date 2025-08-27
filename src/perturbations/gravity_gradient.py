@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial.transform import Rotation as Rot
 from src.perturbations.base import Perturbation
+from src.utils.orbital_tools import get_r_vec_inertial
 
 class GravityGradientPert(Perturbation):
     def __init__(self, I, mu=3.986e5):
@@ -24,11 +25,3 @@ class GravityGradientPert(Perturbation):
             print(f'BODY ORBITAL POSITION VECTOR: {r_hat_body}\n')
 
         return 3 * omega_o**2 * np.cross(r_hat_body, self.I @ r_hat_body)
-
-
-def get_r_vec_inertial(t, r_mag, mu=3.986e5):
-    omega_o = np.deg2rad(np.sqrt(mu / r_mag**3))
-    x = r_mag * np.cos(omega_o*t)
-    y = r_mag * np.sin(omega_o*t)
-    z = 0.0
-    return np.array([x, y, z])
